@@ -1,0 +1,73 @@
+<apex:page title="Add files	" standardController="Account" extensions="DragAndDropFilesCtrl" showHeader="false" sidebar="true" docType="html-5.0" applyBodyTag="false" applyHtmlTag="false">
+	<!-- <c:CustomAttachment attachmentParentId="{!$CurrentPage.parameters.id}"/> -->
+	<c:ExternalLibraries />
+
+		<html class="container-fluid well-lg" id="dropbox" style="background-color:#CFEEF8">			
+		</html>
+	<script>
+		var j$ = jQuery.noConflict();
+		var dropbox;
+		dropbox = document.getElementById("dropbox");
+		console.log("dropbox---->>>",dropbox);
+		dropbox.ondragover = function () { this.className = 'hover'; return false; };
+		dropbox.ondragend = function () { this.className = ''; return false; };
+		var base64StringResult="";
+		var fileToBeUploaded = {};
+		fileToBeUploaded['parentId'] = '{!$CurrentPage.parameters.Id}';
+		function uploadFilesToParent(){
+			console.log("fileToBeUploaded=======>>>",fileToBeUploaded);
+			Visualforce.remoting.Manager.invokeAction(
+				'{!$RemoteAction.DragAndDropFilesCtrl.saveAttachment}',
+				fileToBeUploaded,
+				function(result,event){
+					if(event.status){
+						alert("Files uploaded successfully !");
+					}
+				},
+				{escapce:true}
+			);
+		}
+		dropbox.ondrop = function (e) {
+			e.preventDefault();
+			console.log("files--->>>",e.dataTransfer.files);
+			var file = e.dataTransfer.files[0];
+			fileToBeUploaded['name'] = file.name;
+			fileToBeUploaded['type'] = file.type;
+			var sizeInMB = file.size / 1000;
+			fileToBeUploaded['size'] = sizeInMB;
+			console.log("fileToBeUploaded------>>>>",fileToBeUploaded);
+			var reader = new FileReader();
+			reader.readAsBinaryString(file);
+			console.log("result---->>>"+reader);
+			reader.onloadend = function (e){
+				console.log("e---->>>>",e);
+				if(e.target.readyState == FileReader.DONE){
+					console.log("e---->>>> after read as binary string",e);
+					var binaryString  = '';
+					binaryString = e.target.result;
+					base64StringResult = window.btoa(binaryString);
+					console.log('base64StringResult-------->>>',base64StringResult);
+					//console.log("base64StringResult======??>>",base64StringResult);
+					fileToBeUploaded['body'] = base64StringResult;
+					var toUpload = confirm("Do you want to upload the file ?");
+					if(toUpload){
+						Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.DragAndDropFilesCtrl.saveAttachment}',
+							fileToBeUploaded,
+							function(result,event){
+								console.log('result--->>>',result);
+								console.log('event--->>>',event);
+								if(event.status){
+									alert("Files uploaded successfully !");
+								}
+							},
+							{escapce:true}
+						);
+					}
+				}
+			}
+		}
+
+
+	</script>
+</apex:page>
